@@ -51,7 +51,7 @@ jobs:
 
     - name: Install dependencies (Ubuntu)
       if: startsWith(matrix.os, 'ubuntu')
-      run: sudo apt-get update && sudo apt-get install -y xorg-dev libglu1-mesa-dev libxrandr-dev libxinerama-dev
+      run: sudo apt-get update && sudo apt-get install -y xorg-dev libglu1-mesa-dev libxrandr-dev libxinerama-dev tree
 
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
@@ -74,6 +74,15 @@ jobs:
       # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
 
+    - name: Print build directory structure (Ubuntu)
+      if: startsWith(matrix.os, 'ubuntu')
+      run: tree ${{ steps.strings.outputs.build-output-dir }}
+
+    - name: Print build directory structure (Windows)
+      if: startsWith(matrix.os, 'windows')
+      run: Get-ChildItem -Path ${{ steps.strings.outputs.build-output-dir }} -Recurse | Format-List
+      shell: pwsh
+
     - name: Test
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
       # Execute tests defined by the CMake configuration. Note that --build-config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
@@ -85,7 +94,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: example-executable
-        path: ${{ steps.strings.outputs.build-output-dir }}bin/Release/example.exe
+        path: ${{ steps.strings.outputs.build-output-dir }}/bin/Release/example.exe
 
     - name: Archive executable (Ubuntu)
       if: matrix.os == 'ubuntu-latest'
