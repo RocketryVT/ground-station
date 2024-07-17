@@ -13,7 +13,7 @@
 *
 ********************************************************************************************/
 
-#include "raylib.h"
+#include "../include/raylib/src/raylib.h"
 
 #if defined(PLATFORM_WEB)
 #include <emscripten/emscripten.h>
