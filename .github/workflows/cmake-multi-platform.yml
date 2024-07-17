@@ -51,7 +51,7 @@ jobs:
 
     - name: Install dependencies (Ubuntu)
       if: startsWith(matrix.os, 'ubuntu')
-      run: sudo apt-get update && sudo apt-get install -y libxrandr-dev
+      run: sudo apt-get update && sudo apt-get install -y xorg-dev libglu1-mesa-dev libxrandr-dev libxinerama-dev
 
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
@@ -85,7 +85,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: example-executable
-        path: ${{ steps.strings.outputs.build-output-dir }}/Release/example.exe
+        path: ${{ steps.strings.outputs.build-output-dir }}bin/Release/example.exe
 
     - name: Archive executable (Ubuntu)
       if: matrix.os == 'ubuntu-latest'
