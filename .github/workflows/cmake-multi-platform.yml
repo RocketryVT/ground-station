@@ -88,11 +88,11 @@ jobs:
 
     - name: Set as executable (Ubuntu)
       if: startsWith(matrix.os, 'ubuntu')
-      run: chmod +x ${{ steps.strings.outputs.build-output-dir }}/bin/Release/example
+      run: find ${{ steps.strings.outputs.build-output-dir }}/bin/ -type f -executable -exec chmod +x {} \;
 
     - name: Set as executable (MacOS)
       if: startsWith(matrix.os, 'macos')
-      run: chmod +x ${{ steps.strings.outputs.build-output-dir }}/bin/Release/example
+      run: find ${{ steps.strings.outputs.build-output-dir }}/bin/ -type f -perm +111 -exec chmod +x {} \;
 
     - name: Print build directory structure (Ubuntu)
       if: startsWith(matrix.os, 'ubuntu')
