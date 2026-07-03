@@ -1,0 +1,5 @@
+/Users/gregory/Downloads/Rocketry/Avionics/projects/ground_station/secondary_pico/build/pioasm-install/pioasm/pioasm
+/Users/gregory/Downloads/Rocketry/Avionics/projects/ground_station/secondary_pico/build/pioasm-install/pioasm/pioasmTargets.cmake
+/Users/gregory/Downloads/Rocketry/Avionics/projects/ground_station/secondary_pico/build/pioasm-install/pioasm/pioasmTargets-release.cmake
+/Users/gregory/Downloads/Rocketry/Avionics/projects/ground_station/secondary_pico/build/pioasm-install/pioasm/pioasmConfig.cmake
+/Users/gregory/Downloads/Rocketry/Avionics/projects/ground_station/secondary_pico/build/pioasm-install/pioasm/pioasmConfigVersion.cmake

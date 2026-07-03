@@ -96,8 +96,6 @@ static void diag_spi()
 
 static void publish_hex_packet( const radio::Packet& pkt )
 {
-    if ( !mqtt_is_connected() ) return;
-
     MqttMessage m = {};
     groundstation_Lora1Rf69Packet pb = groundstation_Lora1Rf69Packet_init_zero;
     pb.has_data = true;
@@ -109,6 +107,34 @@ static void publish_hex_packet( const radio::Packet& pkt )
     if ( mqtt_encode_proto( m, "rocket/lora1/rf69",
                             groundstation_Lora1Rf69Packet_fields, &pb ) )
         xQueueSend( g_mqtt_queue, &m, 0 );
+}
+
+static void publish_lora_sample( const groundstation_RocketLoRaSample& pb )
+{
+    MqttMessage m = {};
+    if ( mqtt_encode_proto( m, "rocket/lora1",
+                            groundstation_RocketLoRaSample_fields, &pb ) )
+        xQueueSend( g_mqtt_queue, &m, 0 );
+}
+
+static SIGMA2::DecodeStatus deserialize_sigma2_packet( const radio::Packet& pkt,
+                                                       SIGMA2::DecodedFrame& frame )
+{
+    SIGMA2::DecodeStatus status =
+        SIGMA2::deserialize_frame( pkt.data, pkt.len, frame );
+    if ( status != SIGMA2::DecodeStatus::LengthMismatch ) return status;
+
+    SIGMA2::HEADER header = {};
+    if ( !SIGMA2::HEADER::deserialize( pkt.data, pkt.len, header ) )
+        return SIGMA2::DecodeStatus::TooShort;
+    if ( !header.valid_start() ) return SIGMA2::DecodeStatus::BadStart;
+    if ( header.len > SIGMA2::MAX_PAYLOAD )
+        return SIGMA2::DecodeStatus::PayloadTooLarge;
+
+    const size_t total = SIGMA2::HEADER::WIRE_SIZE + header.len +
+                         SIGMA2::FOOTER::WIRE_SIZE;
+    if ( total > pkt.len ) return SIGMA2::DecodeStatus::TooShort;
+    return SIGMA2::deserialize_frame( pkt.data, total, frame );
 }
 
 static void update_altitude( float alt_m,
@@ -131,8 +157,7 @@ static void update_altitude( float alt_m,
 static bool handle_sigma2_baro_packet( const radio::Packet& pkt )
 {
     SIGMA2::DecodedFrame frame = {};
-    if ( SIGMA2::deserialize_frame( pkt.data, pkt.len, frame ) !=
-         SIGMA2::DecodeStatus::Ok ) {
+    if ( deserialize_sigma2_packet( pkt, frame ) != SIGMA2::DecodeStatus::Ok ) {
         return false;
     }
     if ( frame.header.type != SIGMA2::PacketType::BARO ) return false;
@@ -142,6 +167,14 @@ static bool handle_sigma2_baro_packet( const radio::Packet& pkt )
 
     const float alt_m = static_cast<float>( baro.altitude_cm ) * 0.01f;
     update_altitude( alt_m, frame.header.timestamp_ms, pkt.rssi, pkt.snr );
+
+    groundstation_RocketLoRaSample pb = groundstation_RocketLoRaSample_init_zero;
+    pb.has_boot_ms = true;    pb.boot_ms = frame.header.timestamp_ms;
+    pb.has_alt_baro_m = true; pb.alt_baro_m = alt_m;
+    pb.has_rssi = true;       pb.rssi = pkt.rssi;
+    pb.has_snr = true;        pb.snr = pkt.snr;
+    publish_lora_sample( pb );
+
     log_print( "[lora1] SIGMA2 BARO alt=%.1f m RSSI=%.0f\n",
                (double)alt_m, (double)pkt.rssi );
     return true;
@@ -153,6 +186,24 @@ static bool handle_legacy_sigma_packet( const radio::Packet& pkt )
     if ( !SIGMA::LoRaData::deserialize( pkt.data, pkt.len, d ) ) return false;
 
     update_altitude( d.alt_baro_m, d.boot_ms, pkt.rssi, pkt.snr );
+
+    groundstation_RocketLoRaSample pb = groundstation_RocketLoRaSample_init_zero;
+    pb.has_boot_ms = true;    pb.boot_ms = d.boot_ms;
+    pb.has_state = true;      pb.state = (groundstation_FlightState)d.state;
+    pb.has_sats = true;       pb.sats = d.satellites;
+    pb.has_flags = true;      pb.flags = d.flags;
+    pb.has_lat = true;        pb.lat = d.lat;
+    pb.has_lon = true;        pb.lon = d.lon;
+    pb.has_alt_gps_m = true;  pb.alt_gps_m = d.alt_gps_m;
+    pb.has_alt_baro_m = true; pb.alt_baro_m = d.alt_baro_m;
+    pb.has_speed_ms = true;   pb.speed_ms = d.speed_ms;
+    pb.q_count = 4;
+    pb.q[0] = d.q[0]; pb.q[1] = d.q[1];
+    pb.q[2] = d.q[2]; pb.q[3] = d.q[3];
+    pb.has_rssi = true;       pb.rssi = pkt.rssi;
+    pb.has_snr = true;        pb.snr = pkt.snr;
+    publish_lora_sample( pb );
+
     log_print( "[lora1] SIGMA baro=%.1f m gps=%.1f m RSSI=%.0f\n",
                (double)d.alt_baro_m, (double)d.alt_gps_m, (double)pkt.rssi );
     return true;

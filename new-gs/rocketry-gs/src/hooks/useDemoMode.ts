@@ -81,7 +81,7 @@ function hangDisplayQuat(noseDown: boolean, t: number, seed: number): THREE.Quat
 }
 
 export function useDemoMode(enabled: boolean) {
-  const { addTelemetry, setTx, setAntenna, updateNode, setConnected, clearFlight } =
+  const { addTelemetry, setTx, setAntenna, updateNode, setConnected, clearFlight, setRadioStatus, addPacket } =
     useTelemetryStore();
 
   const tRef       = useRef(0);
@@ -204,6 +204,22 @@ export function useDemoMode(enabled: boolean) {
         rssi: rssi - 2, snr: snr - 1,
       });
 
+      // -- Decoded-packet log (one row per radio per tick) ----------------
+      const noseStatus = {
+        id: 'primary-915', label: 'Primary 915', board: 'primary', radio: 'SX1276',
+        freq_mhz: 915, source_topic: 'rocket/lora0', state, timestamp: Date.now(),
+        has_gps: true, lat: lat + split, lon: lon + split,
+        rssi: rssi + 3, snr,
+      };
+      const adsStatus = {
+        id: 'primary-433', label: 'Primary 433', board: 'primary', radio: 'RF69',
+        freq_mhz: 424.5, source_topic: 'rocket/lora1', state, timestamp: Date.now(),
+        has_gps: true, lat: lat - split, lon: lon - split,
+        rssi: rssi - 2, snr: snr - 1,
+      };
+      setRadioStatus(noseStatus);  addPacket(noseStatus);
+      setRadioStatus(adsStatus);   addPacket(adsStatus);
+
       // -- Antenna tracking (az/el from GS node position, not pad) ---------
       // The beam is drawn from the GS node, so angles must be referenced there.
       const gsLat = LAT0 + CHASE_DLAT;
@@ -241,5 +257,5 @@ export function useDemoMode(enabled: boolean) {
       clearInterval(id);
       setConnected(false);
     };
-  }, [enabled, addTelemetry, setTx, setAntenna, updateNode, setConnected, clearFlight]);
+  }, [enabled, addTelemetry, setTx, setAntenna, updateNode, setConnected, clearFlight, setRadioStatus, addPacket]);
 }

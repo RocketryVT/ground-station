@@ -17,7 +17,7 @@
 // WiFi/UDP and the 915 MHz receiver are intentionally disabled for the no-WiFi
 // field profile. USB CDC is the forwarding path.
 // #include "Tasks/WiFi/wifi_task.hpp"
-// #include "Tasks/LoRa/lora1_task.hpp"
+#include "Tasks/LoRa/lora1_task.hpp"
 #include "Tasks/LoRa/lora2_task.hpp"
 // #include "Tasks/UDP/udp_send_task.hpp"
 #include "Tasks/USB/usb_task.hpp"
@@ -100,7 +100,7 @@ int main()
     printf( "Initializing tasks...\n" );
 
     // wifi_task_init();
-    // lora1_task_init();
+    lora1_task_init();
     lora2_task_init();
     // udp_send_task_init();
 

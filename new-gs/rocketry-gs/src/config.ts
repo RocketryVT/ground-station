@@ -11,8 +11,10 @@ export const CESIUM_ION_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOi
 export const TOPICS = {
   ROCKET_TELEMETRY:  'rocket/telemetry',
   ROCKET_LORA0:      'rocket/lora0',
+  ROCKET_LORA1:      'rocket/lora1',
   ROCKET_LORA1_RF69: 'rocket/lora1/rf69',
   ROCKET_INTER_PICO: 'rocket/inter_pico',
+  RADIO_STATUS:      'gs/radio/status',
   ANTENNA_STATE:     'antenna/state',
   GROUND_IMU:        'gs/pico/primary/imu',
   AHRS_STATUS:       'gs/pico/primary/ahrs/status',

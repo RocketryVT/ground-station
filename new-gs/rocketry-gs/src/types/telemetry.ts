@@ -45,6 +45,30 @@ export interface TxTelemetry {
   snr?:       number;                               // dB
 }
 
+export interface RadioStatus {
+  id: string;
+  label?: string;
+  board?: string;
+  radio?: string;
+  freq_mhz?: number;
+  source_topic?: string;
+  state?: string;
+  timestamp: number;
+  fw_timestamp?: number;
+  packet_count?: number;
+  has_gps?: boolean;
+  has_baro?: boolean;
+  has_gps_alt?: boolean;
+  lat?: number;
+  lon?: number;
+  alt_baro_m?: number;
+  alt_gps_m?: number;
+  rssi?: number;
+  snr?: number;
+  len?: number;
+  message?: string;
+}
+
 export interface AntennaState {
   timestamp:        number;
   actual_az:        number;   // actual azimuth (0 = north, clockwise)

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
-import { useTelemetryStore, type LogLine, type RawMessage, type TelemetryState } from '../store/telemetryStore';
+import { useTelemetryStore, type LogLine, type RawMessage, type PacketLogEntry, type TelemetryState } from '../store/telemetryStore';
 import type {
   AntennaState,
   AhrsStatus,
@@ -11,6 +11,7 @@ import type {
   RawImuSample,
   RawMagSample,
   RawYawImuSample,
+  RadioStatus,
   RocketTelemetry,
 } from '../types/telemetry';
 
@@ -34,6 +35,7 @@ interface TelemetrySnapshot {
   rawYawImu: RawYawImuSample[];
   ahrsHistory: GroundImuState[];
   calibrationEvents: CalibrationEvent[];
+  radioStatuses: Record<string, RadioStatus>;
 }
 
 type TelemetryEvent =
@@ -44,6 +46,7 @@ type TelemetryEvent =
   | { kind: 'ground_imu'; imu: GroundImuState }
   | { kind: 'ahrs_status'; status: AhrsStatus }
   | { kind: 'calibration_event'; event: CalibrationEvent }
+  | { kind: 'radio_status'; status: RadioStatus }
   | { kind: 'node'; node: MobileNode }
   | { kind: 'raw_imu'; sample: RawImuSample }
   | { kind: 'raw_mag'; sample: RawMagSample }
@@ -57,11 +60,19 @@ const MAX_SENSOR_RAW = 500;
 const MAX_HISTORY = 500;
 const MAX_AHRS = 500;
 const MAX_CALIBRATION_EVENTS = 25;
+const MAX_PACKET_LOG = 250;
 
 function appendCapped<T>(items: T[], next: T, limit: number): T[] {
   return items.length >= limit
     ? [...items.slice(items.length - limit + 1), next]
     : [...items, next];
+}
+
+// Single source of unique ids for packet-log rows (used by both the single
+// and batched event paths so React keys never collide).
+let _packetSeq = 0;
+function makePacketEntry(status: PacketLogEntry['status']): PacketLogEntry {
+  return { id: _packetSeq++, ts: Date.now(), status };
 }
 
 function applySnapshot(snapshot: TelemetrySnapshot) {
@@ -81,6 +92,8 @@ function applySnapshot(snapshot: TelemetrySnapshot) {
     rawYawImu: snapshot.rawYawImu ?? [],
     ahrsHistory: snapshot.ahrsHistory ?? [],
     calibrationEvents: snapshot.calibrationEvents ?? [],
+    radioStatuses: snapshot.radioStatuses ?? {},
+    packetLog: [],
   });
 }
 
@@ -111,6 +124,14 @@ function applyEvent(event: TelemetryEvent) {
     case 'calibration_event':
       store.addCalibrationEvent(event.event);
       break;
+    case 'radio_status': {
+      store.setRadioStatus(event.status);
+      const entry = makePacketEntry(event.status);
+      useTelemetryStore.setState((s) => ({
+        packetLog: appendCapped(s.packetLog, entry, MAX_PACKET_LOG),
+      }));
+      break;
+    }
     case 'node':
       store.updateNode(event.node);
       break;
@@ -152,6 +173,8 @@ function applyEvents(events: TelemetryEvent[]) {
     let rawYawImu = state.rawYawImu;
     let ahrsHistory = state.ahrsHistory;
     let calibrationEvents = state.calibrationEvents;
+    let radioStatuses = state.radioStatuses;
+    let packetLog = state.packetLog;
 
     for (const event of events) {
       switch (event.kind) {
@@ -178,6 +201,11 @@ function applyEvents(events: TelemetryEvent[]) {
           break;
         case 'calibration_event':
           calibrationEvents = appendCapped(calibrationEvents, event.event, MAX_CALIBRATION_EVENTS);
+          break;
+        case 'radio_status':
+          if (radioStatuses === state.radioStatuses) radioStatuses = { ...radioStatuses };
+          radioStatuses[event.status.id] = event.status;
+          packetLog = appendCapped(packetLog, makePacketEntry(event.status), MAX_PACKET_LOG);
           break;
         case 'node':
           if (nodes === state.nodes) nodes = { ...nodes };
@@ -214,6 +242,8 @@ function applyEvents(events: TelemetryEvent[]) {
       rawYawImu,
       ahrsHistory,
       calibrationEvents,
+      radioStatuses,
+      packetLog,
     } satisfies Partial<TelemetryState>;
   });
 }

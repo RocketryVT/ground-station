@@ -16,6 +16,7 @@
 // #include "Tasks/Baro/baro_task.hpp"
 #include "Tasks/Fusion/fusion_task.hpp"
 #include "Tasks/GPS/gps_task.hpp"
+#include "Tasks/LoRa/lora_task.hpp"
 #include "Tasks/LoRa/lora1_task.hpp"
 #include "Tasks/LoRa/lora_task.hpp"
 // #include "Tasks/UDP/udp_recv_task.hpp"
@@ -160,8 +161,7 @@ int main()
     // mqtt_task_init();
     gps_task_init();
 
-    // 915 MHz is currently unavailable; leave lora0 powered down.
-    // lora0_task_init();
+    lora0_task_init();
     lora1_task_init();
     // udp_recv_task_init();
 

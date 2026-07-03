@@ -2,7 +2,7 @@ use super::codec;
 use super::logger::{DiagnosticCsv, PacketLogger};
 use super::telemetry::{TelemetryState, UiEvent, EVENT_NAME};
 use rumqttc::{AsyncClient, Event, EventLoop, Incoming, MqttOptions, QoS};
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager};
 use tokio::sync::mpsc;
@@ -175,6 +175,10 @@ fn handle_publish(
                         telemetry: telemetry.clone(),
                     },
                 );
+                if let Some(status) = radio_status_from_packet(topic, &telemetry) {
+                    let status = state.set_radio_status(status);
+                    emit(app, &UiEvent::RadioStatus { status });
+                }
                 maybe_emit_active_drag(app, state, &telemetry);
             }
         }
@@ -202,6 +206,12 @@ fn handle_publish(
                 emit(app, &UiEvent::CalibrationEvent { event });
             }
         }
+        codec::RADIO_STATUS => {
+            if let Some(status) = decoded {
+                let status = state.set_radio_status(status);
+                emit(app, &UiEvent::RadioStatus { status });
+            }
+        }
         codec::RAW_IMU => {
             if let Some(sample) = decoded {
                 state.add_raw_imu(sample.clone());
@@ -220,8 +230,15 @@ fn handle_publish(
                 emit(app, &UiEvent::RawYawImu { sample });
             }
         }
-        codec::ROCKET_LORA0 | codec::ROCKET_INTER_PICO => {
+        codec::ROCKET_LORA0
+        | codec::ROCKET_LORA1
+        | codec::ROCKET_LORA1_RF69
+        | codec::ROCKET_INTER_PICO => {
             if let Some(data) = decoded.as_ref() {
+                if let Some(status) = radio_status_from_packet(topic, data) {
+                    let status = state.set_radio_status(status);
+                    emit(app, &UiEvent::RadioStatus { status });
+                }
                 maybe_emit_active_drag(app, state, data);
             }
         }
@@ -237,6 +254,56 @@ fn handle_publish(
     }
 
     diagnostic_csv.log_event("mqtt_rx", "rx", topic, &raw_text, state);
+}
+
+fn radio_status_from_packet(topic: &str, data: &Value) -> Option<Value> {
+    let (id, label, board, radio, freq_mhz) = match topic {
+        codec::ROCKET_LORA0 => ("primary-915", "Primary 915", "primary", "SX1276", 915.0),
+        codec::ROCKET_LORA1 => ("primary-433", "Primary 433", "primary", "RF69", 424.5),
+        codec::ROCKET_LORA1_RF69 => ("primary-433", "Primary 433", "primary", "RF69", 424.5),
+        codec::ROCKET_INTER_PICO => ("secondary-relay", "Secondary relay", "secondary", "USB relay", 0.0),
+        codec::ROCKET_TELEMETRY => (
+            "secondary-usb-altitude",
+            "USB altitude",
+            "secondary",
+            "USB relay",
+            0.0,
+        ),
+        _ => return None,
+    };
+
+    let lat = data.get("lat").and_then(Value::as_f64);
+    let lon = data.get("lon").and_then(Value::as_f64);
+    let state = data.get("state").and_then(Value::as_str);
+    let has_gps = match (lat, lon) {
+        (Some(lat), Some(lon)) => {
+            state != Some("BARO_ONLY") && (lat.abs() > 0.000001 || lon.abs() > 0.000001)
+        }
+        _ => false,
+    };
+    let has_baro = data.get("alt_baro_m").and_then(Value::as_f64).is_some();
+    let has_gps_alt = data.get("alt_gps_m").and_then(Value::as_f64).is_some();
+
+    Some(json!({
+        "id": id,
+        "label": label,
+        "board": board,
+        "radio": radio,
+        "freq_mhz": freq_mhz,
+        "source_topic": topic,
+        "state": "rx",
+        "packet_count": 1,
+        "has_gps": has_gps,
+        "has_baro": has_baro,
+        "has_gps_alt": has_gps_alt,
+        "lat": data.get("lat").cloned(),
+        "lon": data.get("lon").cloned(),
+        "alt_baro_m": data.get("alt_baro_m").cloned(),
+        "alt_gps_m": data.get("alt_gps_m").cloned(),
+        "rssi": data.get("rssi").cloned(),
+        "snr": data.get("snr").cloned(),
+        "len": data.get("len").cloned(),
+    }))
 }
 
 fn maybe_emit_active_drag(app: &AppHandle, state: &TelemetryState, data: &Value) {

@@ -1,0 +1,43 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/Users/gregory/Downloads/Rocketry/Avionics/projects/ground_station/secondary_pico/build/pico-sdk/src/rp2_common/pico_cyw43_driver/CMakeFiles/pioasmBuild"
+		},
+		{
+			"file" : "/Users/gregory/Downloads/Rocketry/Avionics/projects/ground_station/secondary_pico/build/pico-sdk/src/rp2_common/pico_cyw43_driver/CMakeFiles/pioasmBuild.rule"
+		},
+		{
+			"file" : "/Users/gregory/Downloads/Rocketry/Avionics/projects/ground_station/secondary_pico/build/pico-sdk/src/rp2_common/pico_cyw43_driver/CMakeFiles/pioasmBuild-complete.rule"
+		},
+		{
+			"file" : "/Users/gregory/Downloads/Rocketry/Avionics/projects/ground_station/secondary_pico/build/pico-sdk/src/rp2_common/pico_cyw43_driver/pioasm/src/pioasmBuild-stamp/pioasmBuild-build.rule"
+		},
+		{
+			"file" : "/Users/gregory/Downloads/Rocketry/Avionics/projects/ground_station/secondary_pico/build/pico-sdk/src/rp2_common/pico_cyw43_driver/pioasm/src/pioasmBuild-stamp/pioasmBuild-configure.rule"
+		},
+		{
+			"file" : "/Users/gregory/Downloads/Rocketry/Avionics/projects/ground_station/secondary_pico/build/pico-sdk/src/rp2_common/pico_cyw43_driver/pioasm/src/pioasmBuild-stamp/pioasmBuild-download.rule"
+		},
+		{
+			"file" : "/Users/gregory/Downloads/Rocketry/Avionics/projects/ground_station/secondary_pico/build/pico-sdk/src/rp2_common/pico_cyw43_driver/pioasm/src/pioasmBuild-stamp/pioasmBuild-install.rule"
+		},
+		{
+			"file" : "/Users/gregory/Downloads/Rocketry/Avionics/projects/ground_station/secondary_pico/build/pico-sdk/src/rp2_common/pico_cyw43_driver/pioasm/src/pioasmBuild-stamp/pioasmBuild-mkdir.rule"
+		},
+		{
+			"file" : "/Users/gregory/Downloads/Rocketry/Avionics/projects/ground_station/secondary_pico/build/pico-sdk/src/rp2_common/pico_cyw43_driver/pioasm/src/pioasmBuild-stamp/pioasmBuild-patch.rule"
+		},
+		{
+			"file" : "/Users/gregory/Downloads/Rocketry/Avionics/projects/ground_station/secondary_pico/build/pico-sdk/src/rp2_common/pico_cyw43_driver/pioasm/src/pioasmBuild-stamp/pioasmBuild-update.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"pioasmBuild"
+		],
+		"name" : "pioasmBuild"
+	}
+}

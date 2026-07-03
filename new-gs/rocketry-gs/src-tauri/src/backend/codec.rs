@@ -5,8 +5,10 @@ use serde_json::{json, Value};
 
 pub const ROCKET_TELEMETRY: &str = "rocket/telemetry";
 pub const ROCKET_LORA0: &str = "rocket/lora0";
+pub const ROCKET_LORA1: &str = "rocket/lora1";
 pub const ROCKET_LORA1_RF69: &str = "rocket/lora1/rf69";
 pub const ROCKET_INTER_PICO: &str = "rocket/inter_pico";
+pub const RADIO_STATUS: &str = "gs/radio/status";
 pub const ANTENNA_STATE: &str = "antenna/state";
 pub const GROUND_IMU: &str = "gs/pico/primary/imu";
 pub const AHRS_STATUS: &str = "gs/pico/primary/ahrs/status";
@@ -30,7 +32,7 @@ pub const ROCKET_LOCATION: &str = "rocket/location";
 
 pub fn decode_topic_payload(topic: &str, payload: &[u8]) -> Option<Result<Value, String>> {
     let decoded = match topic {
-        ROCKET_LORA0 | ROCKET_INTER_PICO => decode_rocket_lora(payload),
+        ROCKET_LORA0 | ROCKET_LORA1 | ROCKET_INTER_PICO => decode_rocket_lora(payload),
         ROCKET_LORA1_RF69 => decode_lora1(payload),
         ANTENNA_STATE => decode_antenna(payload),
         GROUND_IMU => decode_ground_imu(payload),

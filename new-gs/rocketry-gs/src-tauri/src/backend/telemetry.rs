@@ -46,6 +46,7 @@ pub struct TelemetrySnapshot {
     pub raw_yaw_imu: Vec<Value>,
     pub ahrs_history: Vec<Value>,
     pub calibration_events: Vec<Value>,
+    pub radio_statuses: HashMap<String, Value>,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -58,6 +59,7 @@ pub enum UiEvent {
     GroundImu { imu: Value },
     AhrsStatus { status: Value },
     CalibrationEvent { event: Value },
+    RadioStatus { status: Value },
     Node { node: Value },
     RawImu { sample: Value },
     RawMag { sample: Value },
@@ -82,6 +84,7 @@ struct RuntimeState {
     raw_yaw_imu: VecDeque<Value>,
     ahrs_history: VecDeque<Value>,
     calibration_events: VecDeque<Value>,
+    radio_statuses: HashMap<String, Value>,
     seq: u64,
 }
 
@@ -109,6 +112,7 @@ impl TelemetryState {
             raw_yaw_imu: state.raw_yaw_imu.iter().cloned().collect(),
             ahrs_history: state.ahrs_history.iter().cloned().collect(),
             calibration_events: state.calibration_events.iter().cloned().collect(),
+            radio_statuses: state.radio_statuses.clone(),
         }
     }
 
@@ -188,6 +192,21 @@ impl TelemetryState {
             MAX_CALIBRATION_EVENTS,
         );
         event
+    }
+
+    pub fn set_radio_status(&self, mut status: Value) -> Value {
+        let id = status
+            .get("id")
+            .and_then(Value::as_str)
+            .unwrap_or("unknown")
+            .to_string();
+        stamp_received_time(&mut status);
+        self.inner
+            .lock()
+            .expect("telemetry state")
+            .radio_statuses
+            .insert(id, status.clone());
+        status
     }
 
     pub fn update_node(&self, id: &str, mut node: Value) {

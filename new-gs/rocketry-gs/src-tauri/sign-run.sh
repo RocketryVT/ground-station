@@ -16,8 +16,9 @@ shift
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENTITLEMENTS="$SCRIPT_DIR/Entitlements.dev.plist"
+IDENTIFIER="org.rocketryatvirginiatech.rocketry-gs"
 
-codesign --force --sign - --entitlements "$ENTITLEMENTS" "$BIN" >/dev/null 2>&1 || {
+codesign --force --sign - --identifier "$IDENTIFIER" --entitlements "$ENTITLEMENTS" "$BIN" >/dev/null 2>&1 || {
   echo "sign-run: codesign failed for $BIN" >&2
   exit 1
 }

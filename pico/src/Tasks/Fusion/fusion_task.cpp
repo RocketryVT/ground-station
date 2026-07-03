@@ -252,8 +252,6 @@ static void fusion_publish_status( bool have_bar_imu,
                                    uint32_t bar_updates,
                                    uint32_t yaw_updates )
 {
-    if ( !mqtt_is_connected() ) return;
-
     MqttMessage m = {};
     groundstation_AhrsStatus pb = groundstation_AhrsStatus_init_zero;
     pb.has_timestamp = true;    pb.timestamp = time_us_64() / 1000u;
@@ -520,8 +518,7 @@ static void fusion_task( void* )
                        (double)q_yaw_to_bar.element.z );
         }
 
-        if ( mqtt_is_connected()
-             && ( now_ticks - last_mqtt ) >= pdMS_TO_TICKS(FUSION_MQTT_INTERVAL_MS) )
+        if ( ( now_ticks - last_mqtt ) >= pdMS_TO_TICKS(FUSION_MQTT_INTERVAL_MS) )
         {
             last_mqtt = now_ticks;
 

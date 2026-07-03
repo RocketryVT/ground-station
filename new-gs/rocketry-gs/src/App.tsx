@@ -10,6 +10,7 @@ import { RocketScene }      from './components/Scene3D/RocketScene';
 import { AntennaScene }     from './components/AntennaScene/AntennaScene';
 import { TelemetryCharts }  from './components/Charts/TelemetryCharts';
 import { VideoFeed }        from './components/VideoFeed/VideoFeed';
+import { PacketLog }         from './components/PacketLog/PacketLog';
 import { DebugPanel }       from './components/DebugPanel/DebugPanel';
 import { useMagCalAutoApply } from './components/MagCalibrationWizard/useMagCalAutoApply';
 
@@ -72,12 +73,16 @@ export default function App() {
             {/* -- Right column: video + charts --------------------------- */}
             <Panel defaultSize={50} minSize={20} className="fill">
               <Group orientation="vertical">
-                <Panel defaultSize={54} minSize={15} className="fill">
+                <Panel defaultSize={44} minSize={15} className="fill">
                   <div className="panel"><VideoFeed /></div>
                 </Panel>
                 <Handle />
-                <Panel defaultSize={46} minSize={20} className="fill">
+                <Panel defaultSize={34} minSize={15} className="fill">
                   <div className="panel"><TelemetryCharts /></div>
+                </Panel>
+                <Handle />
+                <Panel defaultSize={22} minSize={10} className="fill">
+                  <div className="panel"><PacketLog /></div>
                 </Panel>
               </Group>
             </Panel>

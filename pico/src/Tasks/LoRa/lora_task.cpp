@@ -99,8 +99,6 @@ static float q15_to_float( int16_t q )
 
 static void publish_lora_sample( const groundstation_RocketLoRaSample& pb )
 {
-    if ( !mqtt_is_connected() ) return;
-
     MqttMessage m = {};
     if ( mqtt_encode_proto( m, "rocket/lora0",
                             groundstation_RocketLoRaSample_fields, &pb ) )

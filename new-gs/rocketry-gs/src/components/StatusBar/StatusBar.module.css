@@ -81,6 +81,68 @@
   min-width: 0;
 }
 
+.radioGroup {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(54px, 1fr));
+  gap: 5px;
+  min-width: 248px;
+}
+
+.radioPill {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  min-width: 0;
+  height: 34px;
+  padding: 4px 7px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  line-height: 1;
+}
+
+.radioPill span {
+  color: rgba(225, 234, 242, 0.52);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.radioPill strong {
+  color: #ffffff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 10px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.radio_active {
+  border-color: rgba(33, 208, 122, 0.6);
+  background: rgba(33, 208, 122, 0.13);
+}
+
+.radio_ready {
+  border-color: rgba(75, 183, 255, 0.52);
+  background: rgba(75, 183, 255, 0.11);
+}
+
+.radio_stale {
+  border-color: rgba(255, 197, 107, 0.46);
+  background: rgba(255, 197, 107, 0.1);
+}
+
+.radio_fault {
+  border-color: rgba(255, 77, 90, 0.56);
+  background: rgba(255, 77, 90, 0.12);
+}
+
+.radio_off {
+  opacity: 0.56;
+}
+
 .metricBlock {
   display: flex;
   flex-direction: column;

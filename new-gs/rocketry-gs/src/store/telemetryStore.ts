@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type {
   RocketTelemetry, AntennaState, MobileNode, GroundImuState, AhrsStatus, CalibrationEvent,
-  RawImuSample, RawMagSample, RawYawImuSample, TxId, TxTelemetry,
+  RawImuSample, RawMagSample, RawYawImuSample, RadioStatus, TxId, TxTelemetry,
 } from '../types/telemetry';
 import { MAX_HISTORY } from '../config';
 
@@ -10,11 +10,14 @@ const MAX_RAW = 500;
 const MAX_SENSOR_RAW = 500;
 const MAX_AHRS = 500;
 const MAX_CALIBRATION_EVENTS = 25;
+const MAX_PACKET_LOG = 250;
 
 let _seq = 0;
 
 export interface LogLine    { id: number; ts: number; text: string; }
 export interface RawMessage { id: number; ts: number; topic: string; payload: string; }
+// One row per received & decoded radio packet.
+export interface PacketLogEntry { id: number; ts: number; status: RadioStatus; }
 
 function appendCapped<T>(items: T[], next: T, limit: number): T[] {
   return items.length >= limit
@@ -60,6 +63,8 @@ export interface TelemetryState {
   rawYawImu:   RawYawImuSample[];
   ahrsHistory: GroundImuState[];
   calibrationEvents: CalibrationEvent[];
+  radioStatuses: Record<string, RadioStatus>;
+  packetLog:     PacketLogEntry[];
 
   addTelemetry: (t: RocketTelemetry) => void;
   setTx:        (t: TxTelemetry) => void;
@@ -67,6 +72,9 @@ export interface TelemetryState {
   setGroundImu: (i: GroundImuState) => void;
   setAhrsStatus: (s: AhrsStatus) => void;
   addCalibrationEvent: (e: CalibrationEvent) => void;
+  setRadioStatus: (s: RadioStatus) => void;
+  addPacket:    (s: RadioStatus) => void;
+  clearPackets: () => void;
   updateNode:   (n: MobileNode) => void;
   setConnected: (v: boolean) => void;
   clearFlight:  () => void;
@@ -101,6 +109,8 @@ export const useTelemetryStore = create<TelemetryState>((set) => ({
   rawYawImu:   [],
   ahrsHistory: [],
   calibrationEvents: [],
+  radioStatuses: {},
+  packetLog:   [],
 
   addTelemetry: (t) =>
     set((s) => ({
@@ -126,13 +136,29 @@ export const useTelemetryStore = create<TelemetryState>((set) => ({
       calibrationEvents: appendCapped(s.calibrationEvents, event, MAX_CALIBRATION_EVENTS),
     })),
 
+  setRadioStatus: (status) =>
+    set((s) => ({
+      radioStatuses: { ...s.radioStatuses, [status.id]: status },
+    })),
+
+  addPacket: (status) =>
+    set((s) => ({
+      packetLog: appendCapped(
+        s.packetLog,
+        { id: _seq++, ts: Date.now(), status },
+        MAX_PACKET_LOG,
+      ),
+    })),
+
+  clearPackets: () => set({ packetLog: [] }),
+
   updateNode: (n) =>
     set((s) => ({ nodes: { ...s.nodes, [n.id]: n } })),
 
   setConnected: (v) => set({ connected: v }),
 
   clearFlight: () =>
-    set({ history: [], latest: null, flightStart: null, tx: { nose: null, ads: null } }),
+    set({ history: [], latest: null, flightStart: null, tx: { nose: null, ads: null }, packetLog: [] }),
 
   loadHistory: (rows) =>
     set(() => {

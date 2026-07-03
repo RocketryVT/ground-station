@@ -33,6 +33,52 @@ void log_print( const char* fmt, ... )
 // needing to type "log on".  Use "log off" to suppress if needed.
 static bool s_log_enabled = true;
 
+static constexpr char kBase64Alphabet[] =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+static size_t base64_encode( const uint8_t* in,
+                             size_t len,
+                             char* out,
+                             size_t out_len )
+{
+    const size_t needed = ( ( len + 2u ) / 3u ) * 4u;
+    if ( out_len < needed + 1u ) return 0;
+
+    size_t i = 0;
+    size_t o = 0;
+    while ( i < len ) {
+        const uint32_t a = in[i++];
+        const uint32_t b = ( i < len ) ? in[i++] : 0u;
+        const uint32_t c = ( i < len ) ? in[i++] : 0u;
+        const uint32_t triple = ( a << 16 ) | ( b << 8 ) | c;
+
+        out[o++] = kBase64Alphabet[( triple >> 18 ) & 0x3Fu];
+        out[o++] = kBase64Alphabet[( triple >> 12 ) & 0x3Fu];
+        out[o++] = ( i - 1u <= len ) ? kBase64Alphabet[( triple >> 6 ) & 0x3Fu] : '=';
+        out[o++] = ( i <= len ) ? kBase64Alphabet[triple & 0x3Fu] : '=';
+    }
+
+    const size_t rem = len % 3u;
+    if ( rem != 0u ) {
+        out[o - 1u] = '=';
+        if ( rem == 1u ) out[o - 2u] = '=';
+    }
+    out[o] = '\0';
+    return o;
+}
+
+static void print_usb_mqtt_frame( const MqttMessage& msg )
+{
+    static char b64[ ( ( sizeof(msg.payload) + 2u ) / 3u ) * 4u + 1u ];
+    const size_t n = base64_encode( msg.payload, msg.payload_len, b64, sizeof(b64) );
+    if ( n == 0u ) return;
+
+    printf( "MQTTB64,%s,%u,%s\n",
+            msg.topic,
+            (unsigned)msg.payload_len,
+            b64 );
+}
+
 // -- Commands ------------------------------------------------------------------
 
 static void cmd_help()
@@ -253,8 +299,9 @@ static void dispatch( const char* line, size_t len )
 // Pinned to core 0: TinyUSB IRQ fires on core 0; printf() must live there too.
 //
 // Loop:
-//   1. Drain g_log_queue — print only when s_log_enabled.
-//   2. Non-blocking char read — echo, backspace, dispatch on CR/LF.
+//   1. Drain g_mqtt_queue — mirror protobuf MQTT payloads over USB CDC.
+//   2. Drain g_log_queue — print only when s_log_enabled.
+//   3. Non-blocking char read — echo, backspace, dispatch on CR/LF.
 //      Prints "# " as a prompt after every dispatched line.
 static void usb_task( void* )
 {
@@ -275,7 +322,18 @@ static void usb_task( void* )
             stdio_flush();
         }
 
-        // -- 1. Drain log queue --------------------------------------------
+        // -- 1. Drain MQTT queue -------------------------------------------
+        {
+            MqttMessage msg;
+            bool flushed = false;
+            while ( xQueueReceive( g_mqtt_queue, &msg, 0 ) == pdTRUE ) {
+                print_usb_mqtt_frame( msg );
+                flushed = true;
+            }
+            if ( flushed ) stdio_flush();
+        }
+
+        // -- 2. Drain log queue --------------------------------------------
         {
             LogMessage msg;
             if ( xQueueReceive( g_log_queue, &msg, pdMS_TO_TICKS( 10 ) ) == pdTRUE ) {
@@ -287,7 +345,7 @@ static void usb_task( void* )
             }
         }
 
-        // -- 2. Read characters from USB CDC ------------------------------
+        // -- 3. Read characters from USB CDC ------------------------------
         {
             int c;
             while ( ( c = getchar_timeout_us( 0 ) ) != PICO_ERROR_TIMEOUT && c < 256 ) {
